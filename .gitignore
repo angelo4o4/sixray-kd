@@ -1,0 +1,23 @@
+# .gitignore
+.venv/
+__pycache__/
+*.pyc
+*.egg-info/
+.env
+
+# Ignore data and weights
+checkpoints/
+outputs/
+*.pth
+*.pt
+*.zip
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Editor
+.vscode/
+.idea/
+
+# Ignore system files
+.DS_Store

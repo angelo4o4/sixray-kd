@@ -1,0 +1,12 @@
+torch
+torchvision
+torchmetrics
+transformers>=4.42.0
+timm
+evaluate
+#matplotlib
+#albumentations
+tqdm
+wandb
+#numpy
+# add other notebook dependencies here
