@@ -46,11 +46,16 @@ def evaluate_detection(
     processor,
     dataloader: DataLoader,
     device: torch.device,
-    score_threshold: float = 0.0,
+    score_threshold: float = 0.1,  # 0.0 is too strict
 ) -> dict:
     """Run validation and return COCO-style mAP from torchmetrics."""
     model.eval()
-    metric = MeanAveragePrecision(box_format="xyxy", class_metrics=False)
+    metric = MeanAveragePrecision(
+        box_format="xyxy",
+        class_metrics=True,  # True for per-class mAP
+        max_detection_threshold=[1, 10, 300]
+        )
+    # metric.warn_on_many_detections = False
 
     for batch in dataloader:
         pixel_values = batch["pixel_values"].to(device)
@@ -73,4 +78,11 @@ def evaluate_detection(
         "map": float(computed["map"].item()),
         "map_50": float(computed["map_50"].item()),
         "map_75": float(computed["map_75"].item()),
+        "map_per_class": {
+            int(cls_id): float(cls_map)
+            for cls_id, cls_map in zip(
+                computed["classes"].tolist(),
+                computed["map_per_class"].tolist(),
+            )
+        }
     }
