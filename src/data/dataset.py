@@ -9,9 +9,10 @@ from src.data.schema import index_annotations
 
 
 class SixRayDataset(Dataset):
-    def __init__(self, image_dir, anno_file, processor):
+    def __init__(self, image_dir, anno_file, processor, transform=None):
         self.image_dir = image_dir
         self.processor = processor
+        self.transform = transform
 
         with open(anno_file, "r", encoding="utf-8") as f:
             data = json.load(f)
@@ -55,6 +56,9 @@ class SixRayDataset(Dataset):
                 "area": bbox[2] * bbox[3],
                 "iscrowd": ann.get("iscrowd", 0),
             })
+
+        if self.transform is not None:
+            image, target = self.transform(image, target)
 
         encoding = self.processor(images=image, annotations=target, return_tensors="pt")
 
