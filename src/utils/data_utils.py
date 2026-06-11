@@ -40,23 +40,24 @@ def create_train_val_split(dataset, val_pos, val_neg, train_total, seed):
     rng.shuffle(negative_idx)
 
     val_indices = positive_idx[:val_pos] + negative_idx[:val_neg]
-    train_pos = positive_idx[val_pos:]
+    avail_train_pos = positive_idx[val_pos:]
+
+    if train_total < len(avail_train_pos):
+        num_train_pos = train_total // 2
+    else:
+        num_train_pos = len(avail_train_pos)
+        
+    train_pos = avail_train_pos[:num_train_pos]
     need_neg = train_total - len(train_pos)
+    avail_train_neg_count = len(negative_idx) - val_neg
 
-    if need_neg < 0:
-        raise ValueError(
-            f"train_total={train_total} is too small for {len(train_pos)} remaining positives "
-            f"after holding out {val_pos} for validation"
-        )
-
-    available_neg = len(negative_idx) - val_neg
     if need_neg > available_neg:
         warnings.warn(
             f"Requested {need_neg} train negatives but only {available_neg} available; "
             f"train set will have {len(train_pos) + available_neg} images instead of {train_total}.",
             stacklevel=2,
         )
-        need_neg = available_neg
+        need_neg = available_train_neg_count
 
     train_indices = train_pos + negative_idx[val_neg : val_neg + need_neg]
     rng.shuffle(train_indices)
