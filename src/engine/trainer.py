@@ -20,6 +20,7 @@ class DetectionTrainer:
         warmup_ratio=0.1,
         eval_score_threshold=0.1,
         logger=None,
+        id2label=None,
     ):
         self.model = model
         self.processor = processor
@@ -31,6 +32,7 @@ class DetectionTrainer:
         self.warmup_ratio = warmup_ratio
         self.eval_score_threshold = eval_score_threshold
         self.logger = logger or NullLogger()
+        self.id2label = id2label or {}
 
     def fit(self, train_loader, val_loader, epochs):
         optimizer = AdamW(self.model.parameters(), lr=self.lr, weight_decay=self.weight_decay)
@@ -70,6 +72,9 @@ class DetectionTrainer:
                 f"mAP@50: {val_metrics['map_50']:.4f} | "
                 f"mAP@75: {val_metrics['map_75']:.4f}"
             )
+            for cls_id, cls_map in val_metrics["map_per_class"].items():
+                name = self.id2label.get(cls_id, str(cls_id))
+                print(f"    {name}: mAP = {cls_map:.4f}")
 
             self.logger.log(
                 {
@@ -78,6 +83,7 @@ class DetectionTrainer:
                     "val/map": val_metrics["map"],
                     "val/map_50": val_metrics["map_50"],
                     "val/map_75": val_metrics["map_75"],
+                    "val/map_per_class": val_metrics["map_per_class"],
                 },
                 step=epoch + 1,
             )
