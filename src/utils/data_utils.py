@@ -51,13 +51,13 @@ def create_train_val_split(dataset, val_pos, val_neg, train_total, seed):
     need_neg = train_total - len(train_pos)
     avail_train_neg_count = len(negative_idx) - val_neg
 
-    if need_neg > available_neg:
+    if need_neg > avail_train_neg_count:
         warnings.warn(
-            f"Requested {need_neg} train negatives but only {available_train_neg_count} available; "
+            f"Requested {need_neg} train negatives but only {avail_train_neg_count} available; "
             f"train set will have {len(train_pos) + avail_train_neg_count} images instead of {train_total}.",
             stacklevel=2,
         )
-        need_neg = available_train_neg_count
+        need_neg = avail_train_neg_count
 
     train_indices = train_pos + negative_idx[val_neg : val_neg + need_neg]
     rng.shuffle(train_indices)
@@ -98,3 +98,5 @@ def get_stats(dataset, name: str):
     perc = (positives / total_images) * 100 if total_images else 0.0
     print(f"{name} Set: {positives}/{total_images} positive images ({perc:.2f}%)")
     return positives, total_images, perc
+
+
