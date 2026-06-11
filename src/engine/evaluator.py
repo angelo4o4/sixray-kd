@@ -53,7 +53,7 @@ def evaluate_detection(
     metric = MeanAveragePrecision(
         box_format="xyxy",
         class_metrics=True,  # True for per-class mAP
-        max_det_thresholds=[1, 10, 300]
+        #max_det_thresholds=[1, 10, 300] #100
         )
     # metric.warn_on_many_detections = False
 
