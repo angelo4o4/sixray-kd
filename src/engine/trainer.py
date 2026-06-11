@@ -59,7 +59,9 @@ class DetectionTrainer:
             training_state = load_training_state(resume_from)
             if "optimizer" in training_state:
                 optimizer.load_state_dict(training_state["optimizer"])
-
+            else:
+                for group in optimizer.param_groups:
+                    group["initial_lr"] = self.lr
             print(f"Resuming from epoch {start_epoch + 1} | best mAP so far: {best_map:.4f}")
         
         completed_steps = start_epoch * len(train_loader)
