@@ -1,7 +1,10 @@
 from torch.optim import AdamW
 from tqdm.auto import tqdm
 from transformers import get_cosine_schedule_with_warmup
+from pathlib import Path
+import json
 
+from src.utils import load_training_state
 from src.engine.evaluator import evaluate_detection
 from src.utils.checkpoint import save_checkpoint
 from src.utils.logger import NullLogger
@@ -38,18 +41,42 @@ class DetectionTrainer:
         optimizer = AdamW(self.model.parameters(), lr=self.lr, weight_decay=self.weight_decay)
         num_training_steps = len(train_loader) * epochs
         num_warmup_steps = int(self.warmup_ratio * num_training_steps)
-        scheduler = get_cosine_schedule_with_warmup(
-            optimizer,
-            num_warmup_steps=num_warmup_steps,
-            num_training_steps=num_training_steps,
-        )
 
-        print(f"Starting training for {epochs} epochs")
-        print(f"Total steps: {num_training_steps} | Warmup steps: {num_warmup_steps}")
+        #print(f"Starting training for {epochs} epochs")
+        #print(f"Total steps: {num_training_steps} | Warmup steps: {num_warmup_steps}")
 
         history = {"train_loss": [], "val_map": [], "val_map_50": [], "val_map_75": []}
         best_map = 0.0
         best_epoch = 0
+
+        if resume_from:
+            meta_path = Path(resume_from) / "training_meta.json"
+            meta = json.loads(meta_path.read_text()) if meta_path.exists() else {}
+            start_epoch = meta.get("epoch", 0)
+            best_map = meta.get("metrics", {}).get("map", 0.0)
+
+            training_state = load_training_state(resume_from)
+            if "optimizer" in training_state:
+                optimizer.load_state_dict(training_state["optimizer"])
+
+            print(f"Resuming from epoch {start_epoch + 1} | best mAP so far: {best_map:.4f}")
+        
+        completed_steps = start_epoch * len(train_loader)
+        scheduler = get_cosine_schedule_with_warmup(
+            optimizer,
+            num_warmup_steps=num_warmup_steps,
+            num_training_steps=num_training_steps,
+            last_epoch = completed_steps - 1
+        )
+
+        if resume_from and "scheduler" in training_state:
+            scheduler.load_state_dict(training_state["scheduler"])
+
+        print(f"Starting training for {epochs} epochs (from epoch {start_epoch + 1})")
+        print(f"Total steps: {num_training_steps} | Warmup steps: {num_warmup_steps}")
+
+        history = {"train_loss": [], "val_map": [], "val_map_50": [], "val_map_75": []}
+        best_epoch = start_epoch
 
         for epoch in range(epochs):
             train_loss = self._train_epoch(train_loader, optimizer, scheduler, epoch, epochs)
