@@ -4,7 +4,7 @@ from transformers import get_cosine_schedule_with_warmup
 from pathlib import Path
 import json
 
-from src.utils import load_training_state
+from src.utils.checkpoint import load_training_state
 from src.engine.evaluator import evaluate_detection
 from src.utils.checkpoint import save_checkpoint
 from src.utils.logger import NullLogger
