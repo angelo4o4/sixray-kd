@@ -53,8 +53,8 @@ def create_train_val_split(dataset, val_pos, val_neg, train_total, seed):
 
     if need_neg > available_neg:
         warnings.warn(
-            f"Requested {need_neg} train negatives but only {available_neg} available; "
-            f"train set will have {len(train_pos) + available_neg} images instead of {train_total}.",
+            f"Requested {need_neg} train negatives but only {available_train_neg_count} available; "
+            f"train set will have {len(train_pos) + avail_train_neg_count} images instead of {train_total}.",
             stacklevel=2,
         )
         need_neg = available_train_neg_count
