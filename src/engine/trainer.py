@@ -37,7 +37,7 @@ class DetectionTrainer:
         self.logger = logger or NullLogger()
         self.id2label = id2label or {}
 
-    def fit(self, train_loader, val_loader, epochs):
+    def fit(self, train_loader, val_loader, epochs, resume_from=None):
         optimizer = AdamW(self.model.parameters(), lr=self.lr, weight_decay=self.weight_decay)
         num_training_steps = len(train_loader) * epochs
         num_warmup_steps = int(self.warmup_ratio * num_training_steps)
@@ -46,6 +46,7 @@ class DetectionTrainer:
         #print(f"Total steps: {num_training_steps} | Warmup steps: {num_warmup_steps}")
 
         history = {"train_loss": [], "val_map": [], "val_map_50": [], "val_map_75": []}
+        start_epoch = 0
         best_map = 0.0
         best_epoch = 0
 
@@ -75,10 +76,9 @@ class DetectionTrainer:
         print(f"Starting training for {epochs} epochs (from epoch {start_epoch + 1})")
         print(f"Total steps: {num_training_steps} | Warmup steps: {num_warmup_steps}")
 
-        history = {"train_loss": [], "val_map": [], "val_map_50": [], "val_map_75": []}
         best_epoch = start_epoch
 
-        for epoch in range(epochs):
+        for epoch in range(start_epoch, epochs):
             train_loss = self._train_epoch(train_loader, optimizer, scheduler, epoch, epochs)
             val_metrics = evaluate_detection(
                 self.model,
@@ -125,6 +125,8 @@ class DetectionTrainer:
                     save_dir,
                     metrics=val_metrics,
                     epoch=epoch + 1,
+                    optimizer = optimizer,
+                    scheduler = scheduler
                 )
                 print(
                     f"New best model at epoch {epoch + 1} (mAP: {best_map:.4f}). "
