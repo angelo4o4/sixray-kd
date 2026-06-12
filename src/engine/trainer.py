@@ -117,6 +117,14 @@ class DetectionTrainer:
                 step=epoch + 1,
             )
 
+            # Save last epoch
+            last_dir = f"{self.checkpoint_dir}/{self.run_name}_last"
+            save_checkpoint(
+                self.model, self.processor, last_dir,
+                metrics=val_metrics, epoch=epoch+1,
+                optimizer=optimizer, scheduler=scheduler,
+            )
+
             if val_metrics["map"] > best_map:
                 best_map = val_metrics["map"]
                 best_epoch = epoch + 1
