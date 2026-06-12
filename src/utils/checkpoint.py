@@ -4,7 +4,7 @@ from pathlib import Path
 from transformers import AutoImageProcessor, AutoModelForObjectDetection
 
 
-def save_checkpoint(model, processor, save_dir, metrics=None, epoch=None, extra=None):
+def save_checkpoint(model, processor, save_dir, metrics=None, epoch=None, extra=None, optimizer=None, scheduler=None):
     """Save HuggingFace model + processor and optional training metadata."""
     save_dir = Path(save_dir)
     save_dir.mkdir(parents=True, exist_ok=True)
@@ -30,7 +30,7 @@ def save_checkpoint(model, processor, save_dir, metrics=None, epoch=None, extra=
     if scheduler is not None:
         training_state["scheduler"] = scheduler.state_dict()
     if training_state:
-        torch.save(training_state, save_dir / "training_state.ph")
+        torch.save(training_state, save_dir / "training_state.pt")
 
 def load_checkpoint(save_dir, device=None):
     """Load a checkpoint written by save_checkpoint."""
