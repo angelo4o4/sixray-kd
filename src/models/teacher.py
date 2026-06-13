@@ -1,3 +1,4 @@
+import torch
 from transformers import AutoModelForObjectDetection, AutoImageProcessor
 
 
@@ -6,6 +7,7 @@ def load_teacher(
     id2label: dict,
     label2id: dict,
     device=None,
+    use_data_parallel=False,
 ):
     """Load RT-DETR with a detection head sized for the dataset categories."""
     processor = AutoImageProcessor.from_pretrained(model_name)
@@ -18,4 +20,7 @@ def load_teacher(
     )
     if device is not None:
         model = model.to(device)
+    if use_data_parallel and torch.cuda.device_count() > 1:
+        print(f"Using {torch.cuda.device_count()} GPUs with DataParallel")
+        model = torch.nn.DataParallel(model)
     return processor, model
