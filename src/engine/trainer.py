@@ -62,7 +62,12 @@ class DetectionTrainer:
 
             training_state = load_training_state(resume_from)
             if "optimizer" in training_state:
-                optimizer.load_state_dict(training_state["optimizer"])
+                try:
+                    optimizer.load_state_dict(training_state["optimizer"])
+                except ValueError:
+                    print("Optimizer state mismatch — restarting optimizer from scratch")
+                    for group in optimizer.param_groups:
+                        group["initial_lr"] = self.lr
             else:
                 for group in optimizer.param_groups:
                     group["initial_lr"] = self.lr
