@@ -172,7 +172,7 @@ class DetectionTrainer:
                 outputs = self.model(pixel_values=pixel_values, labels=labels)
                 loss = outputs.loss
 
-            self.scaler.scale(loss).backward
+            self.scaler.scale(loss).backward()
             self.scaler.step(optimizer)
             self.scaler.update()
             scheduler.step()
