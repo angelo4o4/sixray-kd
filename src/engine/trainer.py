@@ -1,5 +1,5 @@
 from torch.optim import AdamW
-from torch.cuda.amp import GradScaler, autocast
+from torch.amp import GradScaler, autocast
 from tqdm.auto import tqdm
 from transformers import get_cosine_schedule_with_warmup
 from pathlib import Path
@@ -39,7 +39,7 @@ class DetectionTrainer:
         self.logger = logger or NullLogger()
         self.id2label = id2label or {}
         self.use_amp = use_amp
-        self.scaler = GradScaler(enabled=use_amp)
+        self.scaler = GradScaler('cuda', enabled=use_amp)
 
     def fit(self, train_loader, val_loader, epochs, resume_from=None):
         optimizer = AdamW(self.model.parameters(), lr=self.lr, weight_decay=self.weight_decay)
@@ -163,7 +163,7 @@ class DetectionTrainer:
             pixel_values = batch["pixel_values"].to(self.device)
             labels = [{k: v.to(self.device) for k, v in t.items()} for t in batch["labels"]]
 
-            with autocast(enable=self.use_amp):
+            with autocast('cuda', enabled=self.use_amp):
                 outputs = self.model(pixel_values=pixel_values, labels=labels)
                 loss = outputs.loss
 
