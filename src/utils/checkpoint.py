@@ -46,6 +46,8 @@ def load_checkpoint(save_dir, device=None):
 
 def load_training_state(save_dir):
     """Load optimizer and scheduler's state for the resume"""
+    save_dir = Path(save_dir)
+    
     state_path = Path(save_dir) / "training_state.pt"
     if state_path.exists():
         return torch.load(state_path, map_location="cpu")
