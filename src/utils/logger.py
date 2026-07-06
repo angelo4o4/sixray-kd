@@ -17,13 +17,13 @@ class ConsoleLogger:
 
 
 class WandbLogger:
-    def __init__(self, project, name=None, config=None, enabled=True):
+    def __init__(self, project, name=None, config=None, enabled=True, id =None, resume=None):
         self._run = None
         if not enabled:
             return
         import wandb
 
-        self._run = wandb.init(project=project, name=name, config=config)
+        self._run = wandb.init(project=project, name=name, config=config, id=id, resume=resume)
 
     def log(self, metrics: dict, step: int | None = None):
         if self._run is None:
