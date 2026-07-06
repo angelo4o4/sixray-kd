@@ -33,9 +33,9 @@ def _to_metric_preds(
         #scores = result["scores"]
         #keep = scores >= score_threshold
         preds.append({
-            "boxes": result["boxes"][keep].to(device),
-            "scores": scores[keep].to(device),
-            "labels": result["labels"][keep].to(device),
+            "boxes": result["boxes"].to(device),
+            "scores": result["scores"].to(device),
+            "labels": result["labels"].to(device),
         })
     return preds
 
