@@ -1,7 +1,7 @@
 import json
 import torch
 from pathlib import Path
-from transformers import AutoImageProcessor, AutoModelForObjectDetection
+from transformers import AutoImageProcessor, AutoModelForObjectDetection, AutoConfig
 
 
 def save_checkpoint(model, processor, save_dir, metrics=None, epoch=None, extra=None, optimizer=None, scheduler=None):
@@ -36,7 +36,53 @@ def load_checkpoint(save_dir, device=None):
     """Load a checkpoint written by save_checkpoint."""
     save_dir = Path(save_dir)
     processor = AutoImageProcessor.from_pretrained(save_dir)
-    model = AutoModelForObjectDetection.from_pretrained(save_dir)
+
+    config = AutoConfig.from_pretrained(save_dir)
+    model = AutoModelForObjectDetection.from_config(config)
+
+    safetensors.path = save_dir / "model.safetensors"
+    bin_path = save_dir / "pytorch_model.bin"
+
+    #model = AutoModelForObjectDetection.from_pretrained(save_dir)
+    if safetensors_path.exists():
+        from safetensors.torch import load_file
+        state_dict = load_file(safetensors_path)
+    elif bin_path.exists():
+        state_dict = torch.load(bin_path, map_location="cpu")
+    else:
+        raise FileNotFoundError(f"Nessun file pesi trovato in {save_dir}")
+
+    # manual pathch -> tie heads for classification and bounding box
+    keys_to_copy = list(state_dict.keys())
+    for key in keys_to_copy:
+        # duplicate weights for classification
+        if 'class_embed.0.' in key:
+            for i in range(1, 6):
+                new_key = key.replace('class_embed.0.', f'class_embed.{i}.')
+                state_dict[new_key] = state_dict[key].clone()
+                
+        # duplicate weights for bounding box
+        if 'bbox_embed.0.' in key:
+            for i in range(1, 6):
+                new_key = key.replace('bbox_embed.0.', f'bbox_embed.{i}.')
+                state_dict[new_key] = state_dict[key].clone()
+
+    # load patched weights directly into the model
+    model.load_state_dict(state_dict, strict=False)
+
+    if device is not None:
+        model = model.to(device)
+        
+    # set model to evaluation mode by default
+    model.eval()
+
+    # load metadata
+    meta_path = save_dir / "training_meta.json"
+    meta = json.loads(meta_path.read_text(encoding="utf-8")) if meta_path.exists() else {}
+    
+    return processor, model, meta
+
+
     if device is not None:
         model = model.to(device)
 
