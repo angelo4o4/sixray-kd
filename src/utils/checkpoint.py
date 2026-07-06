@@ -40,7 +40,7 @@ def load_checkpoint(save_dir, device=None):
     config = AutoConfig.from_pretrained(save_dir)
     model = AutoModelForObjectDetection.from_config(config)
 
-    safetensors.path = save_dir / "model.safetensors"
+    safetensors_path = save_dir / "model.safetensors"
     bin_path = save_dir / "pytorch_model.bin"
 
     #model = AutoModelForObjectDetection.from_pretrained(save_dir)
