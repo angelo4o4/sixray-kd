@@ -173,10 +173,15 @@ class DetectionTrainer:
                 loss = outputs.loss
 
             self.scaler.scale(loss).backward()
+            scale_before = self.scaler.get_scale()
             self.scaler.step(optimizer)
             self.scaler.update()
-            scheduler.step()
-            optimizer.zero_grad()
+            scale_after = self.scaler.get_scale()
+
+            if scale_before <= scale_after:
+                scheduler.step()
+
+            optimizer.zero_grad(set_to_none=True)
 
             epoch_loss += loss.item()
             current_lr = scheduler.get_last_lr()[0]

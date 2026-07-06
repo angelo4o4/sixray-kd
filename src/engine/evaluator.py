@@ -26,12 +26,12 @@ def _to_metric_target(labels: list[dict], device: torch.device) -> list[dict]:
 def _to_metric_preds(
     results: list[dict],
     device: torch.device,
-    score_threshold: float = 0.0,
+    #score_threshold: float = 0.0,
 ) -> list[dict]:
     preds = []
     for result in results:
-        scores = result["scores"]
-        keep = scores >= score_threshold
+        #scores = result["scores"]
+        #keep = scores >= score_threshold
         preds.append({
             "boxes": result["boxes"][keep].to(device),
             "scores": scores[keep].to(device),
@@ -55,7 +55,7 @@ def evaluate_detection(
         class_metrics=True,  # True for per-class mAP
         #max_det_thresholds=[1, 10, 300] #100
         )
-    # metric.warn_on_many_detections = False
+    metric.warn_on_many_detections = False
 
     for batch in dataloader:
         pixel_values = batch["pixel_values"].to(device)
@@ -69,7 +69,7 @@ def evaluate_detection(
             target_sizes=target_sizes,
         )
 
-        preds = _to_metric_preds(results, device, score_threshold)
+        preds = _to_metric_preds(results, device)
         targets = _to_metric_target(labels, device)
         metric.update(preds, targets)
 

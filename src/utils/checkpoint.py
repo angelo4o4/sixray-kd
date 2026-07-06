@@ -12,6 +12,8 @@ def save_checkpoint(model, processor, save_dir, metrics=None, epoch=None, extra=
     model.save_pretrained(save_dir)
     processor.save_pretrained(save_dir)
 
+    torch.save(model.state_dict(), save_dir / "model_full_weights.pt")
+
     meta = {}
     if epoch is not None:
         meta["epoch"] = epoch
@@ -40,39 +42,17 @@ def load_checkpoint(save_dir, device=None):
     config = AutoConfig.from_pretrained(save_dir)
     model = AutoModelForObjectDetection.from_config(config)
 
-    safetensors_path = save_dir / "model.safetensors"
-    bin_path = save_dir / "pytorch_model.bin"
-
-    #model = AutoModelForObjectDetection.from_pretrained(save_dir)
-    if safetensors_path.exists():
-        from safetensors.torch import load_file
-        state_dict = load_file(safetensors_path)
-    elif bin_path.exists():
-        state_dict = torch.load(bin_path, map_location="cpu")
+    weights_path = save_dir / "model_full_weights.pt"
+    if weights_path.exists():
+        state_dict = torch.load(weights_path, map_location="cpu")
+        model.load_state_dict(state_dict, strict=True)
+        print(f"Loaded full weights from {weights_path}")
     else:
-        raise FileNotFoundError(f"Nessun file pesi trovato in {save_dir}")
-
-    # manual pathch -> tie heads for classification and bounding box
-    keys_to_copy = list(state_dict.keys())
-    for key in keys_to_copy:
-        # duplicate weights for classification
-        if 'class_embed.0.' in key:
-            for i in range(1, 6):
-                new_key = key.replace('class_embed.0.', f'class_embed.{i}.')
-                state_dict[new_key] = state_dict[key].clone()
-                
-        # duplicate weights for bounding box
-        if 'bbox_embed.0.' in key:
-            for i in range(1, 6):
-                new_key = key.replace('bbox_embed.0.', f'bbox_embed.{i}.')
-                state_dict[new_key] = state_dict[key].clone()
-
-    # load patched weights directly into the model
-    model.load_state_dict(state_dict, strict=False)
+        print(f"No full weights found in {weights_path}, loading from hf")
+        model = AutoModelForObjectDetection.from_pretrained(save_dir)
 
     if device is not None:
         model = model.to(device)
-        
     # set model to evaluation mode by default
     model.eval()
 
@@ -80,14 +60,6 @@ def load_checkpoint(save_dir, device=None):
     meta_path = save_dir / "training_meta.json"
     meta = json.loads(meta_path.read_text(encoding="utf-8")) if meta_path.exists() else {}
     
-    return processor, model, meta
-
-
-    if device is not None:
-        model = model.to(device)
-
-    meta_path = save_dir / "training_meta.json"
-    meta = json.loads(meta_path.read_text(encoding="utf-8")) if meta_path.exists() else {}
     return processor, model, meta
 
 def load_training_state(save_dir):
@@ -105,35 +77,3 @@ def load_training_state(save_dir):
     if (save_dir / "scheduler_state_dict.pt").exists():
         state["scheduler"] = torch.load(save_dir / "scheduler_state_dict.pt", map_location="cpu")
     return state
-
-def load_manual_checkpoint(save_dir, device=None):
-    """Load chakpoint manually saved"""
-    save_dir = Path(save_dir)
-
-    processor = AutoImageProcessor.from_pretrained(save_dir / "processor")
-    model = AutoModelForObjectDetection.from_pretrained(save_dir / "model_hf")
-    if device is not None:
-        model = model.to(device)
-
-    meta_path = save_dir / "manual_metrics.json"
-    meta = json.loads(meta_path.read_text(encoding="utf-8")) if meta_path.exists() else {}
-
-    epoch = meta.get("finished_epoch", meta.get("epoch", 0))
-
-    map_val    = next((meta[k] for k in meta if "val_map" in k and "50" not in k and "75" not in k), 0.0)
-    map_50_val = next((meta[k] for k in meta if "val_map_50" in k or "map_50" in k), 0.0)
-    map_75_val = next((meta[k] for k in meta if "val_map_75" in k or "map_75" in k), 0.0)
-
-    normalized = {
-        "epoch": epoch,
-        "metrics": {
-            "map":    map_val,
-            "map_50": map_50_val,
-            "map_75": map_75_val,
-        }
-    }
-    training_meta_path = save_dir / "training_meta.json"
-    if not training_meta_path.exists():
-        training_meta_path.write_text(json.dumps(normalized, indent=2), encoding="utf-8")
-
-    return processor, model, normalized
