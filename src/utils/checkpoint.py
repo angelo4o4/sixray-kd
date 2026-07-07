@@ -45,7 +45,18 @@ def load_checkpoint(save_dir, device=None):
     weights_path = save_dir / "model_full_weights.pt"
     if weights_path.exists():
         state_dict = torch.load(weights_path, map_location="cpu")
-        model.load_state_dict(state_dict, strict=True)
+        
+        # fix with corrected keys
+        clean_state_dict = {}
+        for k, v in state_dict.items():
+            k = k.replace('model.encoder.encoder.', 'model.encoder.aifi.')
+            k = k.replace('.self_attn.out_proj.', '.self_attn.o_proj.')
+            k = k.replace('.fc1.', '.mlp.fc1.')
+            k = k.replace('.fc2.', '.mlp.fc2.')
+            clean_state_dict[k] = v
+
+        model.load_state_dict(clean_state_dict, strict=True)
+
         print(f"Loaded full weights from {weights_path}")
     else:
         print(f"No full weights found in {weights_path}, loading from hf")
