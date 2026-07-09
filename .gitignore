@@ -7,6 +7,10 @@ __pycache__/
 
 # Ignore data and weights
 checkpoints/
+tests/fixtures/train.json
+tests/fixtures/test.json
+tests/fixtures/sixray_train_detr_coco.json
+tests/fixtures/sixray_test_detr_coco.json
 outputs/
 *.pth
 *.pt

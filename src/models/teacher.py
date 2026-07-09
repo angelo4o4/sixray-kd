@@ -24,3 +24,4 @@ def load_teacher(
         print(f"Using {torch.cuda.device_count()} GPUs with DataParallel")
         model = torch.nn.DataParallel(model)
     return processor, model
+    

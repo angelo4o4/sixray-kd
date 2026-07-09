@@ -2,7 +2,6 @@ import random
 import warnings
 from collections import Counter
 
-
 def _pos_neg_indices(dataset) -> tuple[list[int], list[int]]:
     positive_idx, negative_idx = [], []
     for idx in range(len(dataset)):
