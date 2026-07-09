@@ -28,6 +28,14 @@ class TrainTransform:
                 x, y, w, h = ann["bbox"]
                 ann["bbox"] = [x, height - y - h, w, h]
 
+        # clipping bboxes to avoid out of bounds
+        valid_annotations = []
+        for ann in target["annotations"]:
+            ann["bbox"] = self.clip_bbox(ann["bbox"], width, height)
+            if ann["bbox"][2] > 0 and ann["bbox"][3] > 0:
+                valid_annotations.append(ann)
+
+        target["annotations"] = valid_annotations
         image = self.color_jitter(image)
         return image, target
 
