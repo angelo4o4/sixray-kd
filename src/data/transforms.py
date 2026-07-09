@@ -11,6 +11,15 @@ class TrainTransform:
         self.vflip_p = vflip_p  # adding vertical flip
         self.color_jitter = T.ColorJitter(brightness=brightness, contrast=contrast)
 
+    def _clip_bbox(self, bbox, width, height):
+        """Force the bbox to stay within borders"""
+        x, y, w, h = bbox
+        x_min = max(0, x)
+        y_min = max(0, y)
+        x_max = min(width, x + w)
+        y_max = min(height, y + h)
+        return [x_min, y_min, max(0, x_max - x_min), max(0, y_max - y_min)]
+
     def __call__(self, image, target):
         width, height = image.size
         target = copy.deepcopy(target)
@@ -31,7 +40,7 @@ class TrainTransform:
         # clipping bboxes to avoid out of bounds
         valid_annotations = []
         for ann in target["annotations"]:
-            ann["bbox"] = self.clip_bbox(ann["bbox"], width, height)
+            ann["bbox"] = self._clip_bbox(ann["bbox"], width, height)
             if ann["bbox"][2] > 0 and ann["bbox"][3] > 0:
                 valid_annotations.append(ann)
 
