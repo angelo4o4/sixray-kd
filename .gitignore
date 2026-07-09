@@ -7,6 +7,7 @@ __pycache__/
 
 # Ignore data and weights
 checkpoints/
+tests/
 tests/fixtures/train.json
 tests/fixtures/test.json
 tests/fixtures/sixray_train_detr_coco.json
@@ -18,6 +19,9 @@ outputs/
 
 # Jupyter
 .ipynb_checkpoints/
+notebooks/experiments/01_train_teacher_baseline.ipynb
+notebooks/experiments/01_train_teacher.ipynb
+
 
 # Editor
 .vscode/
