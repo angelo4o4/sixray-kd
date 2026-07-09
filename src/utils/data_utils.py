@@ -1,5 +1,6 @@
 import random
 import warnings
+import torch
 from collections import Counter
 
 def _pos_neg_indices(dataset) -> tuple[list[int], list[int]]:
@@ -97,3 +98,42 @@ def get_stats(dataset, name: str):
     perc = (positives / total_images) * 100 if total_images else 0.0
     print(f"{name} Set: {positives}/{total_images} positive images ({perc:.2f}%)")
     return positives, total_images, perc
+
+
+def calculate_sample_weights(dataset, indices, id2label):
+    """
+    Compute sample weights for WeightedRandomSampler
+    Assign higher weight to images with less frequent classes
+    """
+    class_counts = Counter()
+    # class in each image
+    images_classes_list = []
+
+    for idx in indices:
+        anns = dataset.annotations_per_image[idx]
+        classes_in_img = [ann["category_id"] for ann in anns]
+
+        for cls_id in classes_in_img:
+            class_counts[cls_id] += 1
+        
+        images_classes_list.append(classes_in_img)
+
+    # calculate weight for each class
+    total_objects = sum(class_counts.values())
+    class_weights = {}
+
+    for cls_id in id2label.keys():
+        count = class_counts.get(cls_id, 0)
+        class_weights[cls_id] = total_objects / (len(id2label) * (count + 1))
+
+    # calculate weight for each image
+    sample_weights = []
+    for classes in images_classes_list:
+        if not classes:
+            # basic weight for empty images
+            sample_weights.append(0.1)
+        else:
+            img_weight = max(class_weights[c] for c in classes)
+            sample_weights.append(img_weight)
+    
+    return torch.DoubleTensor(sample_weights)
