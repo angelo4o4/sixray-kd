@@ -1,9 +1,10 @@
+import json
+import torch
 from torch.optim import AdamW
 from torch.amp import GradScaler, autocast
 from tqdm.auto import tqdm
 from transformers import get_cosine_schedule_with_warmup
 from pathlib import Path
-import json
 
 from src.utils.checkpoint import load_training_state
 from src.engine.evaluator import evaluate_detection
