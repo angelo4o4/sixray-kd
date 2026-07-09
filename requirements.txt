@@ -1,12 +1,15 @@
 torch
 torchvision
+pillow
 torchmetrics
+pycocotools
 transformers>=4.42.0
 timm
 evaluate
-#matplotlib
-#albumentations
+numpy
+pytest
 tqdm
+matplotlib
 wandb
-#numpy
+#albumentations
 # add other notebook dependencies here
