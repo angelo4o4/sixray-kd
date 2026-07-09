@@ -6,7 +6,7 @@ from torchvision import transforms as T
 class TrainTransform:
     """PIL + COCO bbox augmentations applied before the HF processor."""
 
-    def __init__(self, flip_p=0.5, brightness=0.2, contrast=0.2):
+    def __init__(self, flip_p=0.5, vflip_p=0.5, brightness=0.2, contrast=0.2):
         self.flip_p = flip_p
         self.vflip_p = vflip_p  # adding vertical flip
         self.color_jitter = T.ColorJitter(brightness=brightness, contrast=contrast)
