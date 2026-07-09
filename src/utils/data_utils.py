@@ -97,5 +97,3 @@ def get_stats(dataset, name: str):
     perc = (positives / total_images) * 100 if total_images else 0.0
     print(f"{name} Set: {positives}/{total_images} positive images ({perc:.2f}%)")
     return positives, total_images, perc
-
-

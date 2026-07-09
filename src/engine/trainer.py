@@ -173,6 +173,11 @@ class DetectionTrainer:
                 loss = outputs.loss
 
             self.scaler.scale(loss).backward()
+
+            self.scaler.unscale_(optimizer) # unscale gradients
+            torch.nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=1.0) # clip gradients
+
+            # step optimizer and update scaler
             scale_before = self.scaler.get_scale()
             self.scaler.step(optimizer)
             self.scaler.update()

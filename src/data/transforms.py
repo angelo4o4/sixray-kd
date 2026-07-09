@@ -1,5 +1,5 @@
 import random
-
+import copy
 from torchvision import transforms as T
 
 
@@ -11,9 +11,11 @@ class TrainTransform:
         self.color_jitter = T.ColorJitter(brightness=brightness, contrast=contrast)
 
     def __call__(self, image, target):
+        width, height = image.size
+        target = copy.deepcopy(target)
+        # horizontal flip
         if random.random() < self.flip_p:
             image = T.functional.hflip(image)
-            width, _ = image.size
             for ann in target["annotations"]:
                 x, y, w, h = ann["bbox"]
                 ann["bbox"] = [width - x - w, y, w, h]
