@@ -23,6 +23,7 @@ Loss components:
 
 import torch
 import torch.nn.functional as F
+import math
 
 from sixray_student.config import (
     NUM_CLASSES,
@@ -30,6 +31,39 @@ from sixray_student.config import (
     BOX_LOSS_WEIGHT,
     MAX_OBJECTNESS_POS_WEIGHT,
 )
+
+
+def feature_distillation_loss(student_features, teacher_features, adapter, targets,
+                              image_size=640, background_weight=0.1):
+    """Channel-normalized feature distance, with separate foreground/background means.
+
+    Dataset targets are already xyxy in the shared resized image. An original
+    x-coordinate becomes x * 640 / original_width, then x / 32 on the 20-cell
+    grid (equivalently x_original * 20 / original_width). The same applies to y.
+    Floor left/top and ceil right/bottom so every intersecting cell is foreground.
+    Empty foreground contributes zero; negative images retain background KD.
+    """
+    projected = F.normalize(adapter(student_features).float(), dim=1)
+    reference = F.normalize(teacher_features.float(), dim=1)
+    distance = (projected - reference).square().sum(dim=1)
+    batch_size, grid_h, grid_w = distance.shape
+    mask = torch.zeros_like(distance)
+    for batch_index, target in enumerate(targets):
+        for x1, y1, x2, y2 in target["boxes"].tolist():
+            left = max(0, math.floor(x1 * grid_w / image_size))
+            top = max(0, math.floor(y1 * grid_h / image_size))
+            right = min(grid_w, math.ceil(x2 * grid_w / image_size))
+            bottom = min(grid_h, math.ceil(y2 * grid_h / image_size))
+            mask[batch_index, top:bottom, left:right] = 1
+    foreground = (distance * mask).sum((1, 2)) / mask.sum((1, 2)).clamp_min(1)
+    background_mask = 1 - mask
+    background = (distance * background_mask).sum((1, 2)) / background_mask.sum((1, 2)).clamp_min(1)
+    loss = (foreground + background_weight * background).mean()
+    return loss, {
+        "kd_loss": float(loss.detach()),
+        "kd_foreground": float(foreground.detach().mean()),
+        "kd_background": float(background.detach().mean()),
+    }
 
 
 def split_predictions(

@@ -34,9 +34,29 @@ def save_checkpoint(model, processor, save_dir, metrics=None, epoch=None, extra=
     if training_state:
         torch.save(training_state, save_dir / "training_state.pt")
 
-def load_checkpoint(save_dir, device=None):
+def load_checkpoint(save_dir, device=None, *, strict=False):
     """Load a checkpoint written by save_checkpoint."""
     save_dir = Path(save_dir)
+    if strict:
+        # Inference must not silently initialize missing weights. Let Transformers
+        # handle its versioned key conversions instead of applying legacy renames.
+        processor = AutoImageProcessor.from_pretrained(save_dir, local_files_only=True)
+        model, loading_info = AutoModelForObjectDetection.from_pretrained(
+            save_dir, local_files_only=True, output_loading_info=True,
+            ignore_mismatched_sizes=False,
+        )
+        problems = {key: loading_info.get(key) for key in (
+            "missing_keys", "unexpected_keys", "mismatched_keys", "error_msgs"
+        ) if loading_info.get(key)}
+        if problems:
+            raise RuntimeError(f"Incompatible teacher checkpoint {save_dir}: {problems}")
+        if device is not None:
+            model = model.to(device)
+        model.eval()
+        meta_path = save_dir / "training_meta.json"
+        meta = json.loads(meta_path.read_text(encoding="utf-8")) if meta_path.exists() else {}
+        return processor, model, meta
+
     processor = AutoImageProcessor.from_pretrained(save_dir)
 
     config = AutoConfig.from_pretrained(save_dir)
