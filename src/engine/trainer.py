@@ -3,7 +3,7 @@ import torch
 from torch.optim import AdamW
 from torch.amp import GradScaler, autocast
 from tqdm.auto import tqdm
-from transformers import AutoModelForObjectDetection, get_cosine_schedule_with_warmup
+from transformers import get_cosine_schedule_with_warmup
 from pathlib import Path
 
 from src.utils.checkpoint import load_training_state
@@ -58,10 +58,12 @@ class DetectionTrainer:
         if resume_from:
             # Restore the model weights too. Without this only the optimizer, the scheduler and
             # the epoch counter are resumed, and training goes on from whatever is in self.model.
-            resumed = AutoModelForObjectDetection.from_pretrained(resume_from)
+            # They are read from model_full_weights.pt: the safetensors file written by
+            # save_pretrained lacks the prediction heads of decoder layers 1-5.
+            state = torch.load(Path(resume_from) / "model_full_weights.pt", map_location="cpu", weights_only=True)
             target = self.model.module if isinstance(self.model, torch.nn.DataParallel) else self.model
-            target.load_state_dict(resumed.state_dict(), strict=True)
-            del resumed
+            target.load_state_dict(state, strict=True)
+            del state
 
             meta_path = Path(resume_from) / "training_meta.json"
             meta = json.loads(meta_path.read_text()) if meta_path.exists() else {}
