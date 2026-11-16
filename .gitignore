@@ -4,6 +4,7 @@ __pycache__/
 *.pyc
 *.egg-info/
 .env
+.pytest_cache/
 
 # Ignore data and weights
 checkpoints/
@@ -22,10 +23,13 @@ outputs/
 notebooks/experiments/01_train_teacher_baseline.ipynb
 notebooks/experiments/01_train_teacher.ipynb
 
-
 # Editor
 .vscode/
 .idea/
 
 # Ignore system files
 .DS_Store
+
+# Ignore images and edits folder
+img/
+edits/
