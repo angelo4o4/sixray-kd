@@ -1,4 +1,4 @@
-# Anna ResNet18 YOLO-style student detector
+# ResNet18 YOLO-style student detector
 
 This folder contains a ResNet18-based student detector.
 
