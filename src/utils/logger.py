@@ -17,7 +17,7 @@ class ConsoleLogger:
 
 
 class WandbLogger:
-    def __init__(self, project, name=None, config=None, enabled=True, id =None, resume=None):
+    def __init__(self, project, name=None, config=None, enabled=True, id=None, resume=None):
         self._run = None
         if not enabled:
             return

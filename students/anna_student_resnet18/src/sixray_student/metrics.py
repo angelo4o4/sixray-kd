@@ -1,15 +1,4 @@
-"""
-This module contains:
-- conversion from model bbox outputs to xyxy boxes
-- prediction decoding with confidence filtering and NMS
-- mAP evaluation using torchmetrics
-- readable printing of detection metrics
-
-It does not contain:
-- training loop
-- checkpoint saving/loading
-- W&B logging
-"""
+"""Student prediction decoding, class-aware NMS, and mAP evaluation."""
 
 import torch
 import torch.nn.functional as F
@@ -171,14 +160,7 @@ def decode_predictions(
 
 
 def metrics_to_dict(metrics):
-    """
-    Convert torchmetrics output to plain Python values.
-
-    This makes metrics easier to:
-    - print
-    - save as JSON
-    - log to W&B
-    """
+    """Convert torchmetrics values for printing, JSON output, and W&B logging."""
 
     result = {}
 
@@ -317,7 +299,7 @@ def evaluate_map(
         metric.update(preds, ground_truth)
 
         if (batch_idx + 1) % 100 == 0:
-            print(f"evaluated batches: {batch_idx + 1} / {len(data_loader)}")
+            print(f"Evaluated batches: {batch_idx + 1} / {len(data_loader)}")
 
     metrics = metric.compute()
 
@@ -358,12 +340,7 @@ def print_detection_metrics(
 
 
 def check_decode_on_dummy_predictions():
-    """
-    Small sanity check for prediction decoding.
-
-    This checks only tensor shapes and decoding mechanics.
-    It does not check model quality.
-    """
+    """Check prediction shapes and decoding on random inputs."""
 
     from sixray_student.config import GRID_SIZE, NUM_BOXES, NUM_CLASSES
 

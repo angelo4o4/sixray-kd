@@ -1,8 +1,8 @@
 #!/bin/bash
-# Installing dependencies to be used in Colab
+# Install Colab dependencies.
 pip install -q -r /content/sixray-kd/requirements.txt
 
-# Dataset extraction
+# Extract the dataset.
 DATASET_NAME=${1:-"subset_clean.zip"}
 DATASET_ZIP_PATH="/content/drive/MyDrive/DatasetAPAI/${DATASET_NAME}"
 DEST="/content/data"

@@ -1,7 +1,6 @@
 """Train matched supervised and feature-KD students on SIXray-D.
 
-Run from the same repository location as the original matched-run script.
-The model, dataset, losses, and training loop remain in sixray_student.
+Run from the repository root; see docs/reproduction.md for required files.
 """
 
 from datetime import datetime
@@ -28,9 +27,8 @@ from sixray_student.model import build_student_model
 from sixray_student.metrics import evaluate_map
 from sixray_student.train_utils import train_one_epoch, make_grad_scaler
 
-ARTIFACTS = Path("C:/Users/89526/Documents/sixray-artifacts")
+ARTIFACTS = ROOT / "artifacts"
 INITIAL_RUN = ARTIFACTS / "experiments/feature_kd_20261016T214646677055Z"
-CONFIG_PATH = INITIAL_RUN / "kd/config.json"
 INITIAL_WEIGHTS = INITIAL_RUN / "initial_student.pth"
 EXISTING_PAIR = ARTIFACTS / "experiments/matched_20261016T221317947683Z"
 
@@ -55,7 +53,7 @@ def set_seed(seed):
 
 
 def train_student(name, use_kd, config, initial_weights, teacher, train_data, val_data, output_dir):
-    """Both runs start from identical student weights and data-shuffle seed."""
+    """We start both runs from the same student weights and shuffle seed."""
     set_seed(config["seed"])
     run_dir = output_dir / name
     run_dir.mkdir()
@@ -85,7 +83,7 @@ def train_student(name, use_kd, config, initial_weights, teacher, train_data, va
     )
 
     optimizer = torch.optim.AdamW(parameters, lr=LEARNING_RATE, weight_decay=WEIGHT_DECAY)
-    
+
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
         optimizer, T_max=EPOCHS, eta_min=MIN_LEARNING_RATE,
     )
@@ -184,7 +182,7 @@ def prepare(output_dir):
                        "adapter_preserves_rng_and_student": True, "unique_output": str(pair_dir)})
         initial_states.append({k: v.clone() for k, v in initial.items()})
         del initial_student, control, kd, adapter
-    # Keep the exact submitted source and reusable modules with the artifacts.
+    # Save the script and student modules alongside the results.
     shutil.copy2(__file__, output_dir / "run_matched_feature_kd.py")
     shutil.copytree(ROOT / "students/anna_student_resnet18/src/sixray_student",
                     output_dir / "source/sixray_student", ignore=shutil.ignore_patterns("__pycache__"))
@@ -232,7 +230,7 @@ def main():
         return
     if sys.argv[1] != "--run" or not (output_dir / "checks_passed.json").exists():
         raise ValueError("Use --prepare-only DIRECTORY, then --run DIRECTORY")
-    # Exclusive marker prevents duplicate launches into a prepared experiment.
+    # Create the marker once to prevent duplicate runs in this directory.
     (output_dir / "started.json").open("x").write(json.dumps({"started": datetime.now().isoformat()}))
     config = json.loads((output_dir / "seed_43/config.json").read_text())
 

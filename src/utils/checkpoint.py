@@ -5,7 +5,7 @@ from transformers import AutoImageProcessor, AutoModelForObjectDetection, AutoCo
 
 
 def save_checkpoint(model, processor, save_dir, metrics=None, epoch=None, extra=None, optimizer=None, scheduler=None):
-    """Save HuggingFace model + processor and optional training metadata."""
+    """Save the Hugging Face model, processor, and optional training metadata."""
     save_dir = Path(save_dir)
     save_dir.mkdir(parents=True, exist_ok=True)
 
@@ -25,7 +25,7 @@ def save_checkpoint(model, processor, save_dir, metrics=None, epoch=None, extra=
     if meta:
         (save_dir / "training_meta.json").write_text(json.dumps(meta, indent=2), encoding="utf-8")
 
-    # saving also optimizer and scheduler state
+    # Save optimizer and scheduler state for resuming training.
     training_state = {}
     if optimizer is not None:
         training_state["optimizer"] = optimizer.state_dict()
@@ -38,8 +38,7 @@ def load_checkpoint(save_dir, device=None, *, strict=False):
     """Load a checkpoint written by save_checkpoint."""
     save_dir = Path(save_dir)
     if strict:
-        # Inference must not silently initialize missing weights. Let Transformers
-        # handle its versioned key conversions instead of applying legacy renames.
+        # Require complete weights and let Transformers handle versioned key conversions.
         processor = AutoImageProcessor.from_pretrained(save_dir, local_files_only=True)
         model, loading_info = AutoModelForObjectDetection.from_pretrained(
             save_dir, local_files_only=True, output_loading_info=True,
@@ -66,7 +65,7 @@ def load_checkpoint(save_dir, device=None, *, strict=False):
     if weights_path.exists():
         state_dict = torch.load(weights_path, map_location="cpu")
         
-        # fix with corrected keys
+        # Convert older checkpoint keys.
         clean_state_dict = {}
         for k, v in state_dict.items():
             k = k.replace('model.encoder.encoder.', 'model.encoder.aifi.')
@@ -79,7 +78,7 @@ def load_checkpoint(save_dir, device=None, *, strict=False):
 
         print(f"Loaded full weights from {weights_path}")
     else:
-        print(f"No full weights found in {weights_path}, loading from hf")
+        print(f"No full weights found in {weights_path}, loading Hugging Face weights")
         model = AutoModelForObjectDetection.from_pretrained(save_dir)
 
     if device is not None:
@@ -94,14 +93,14 @@ def load_checkpoint(save_dir, device=None, *, strict=False):
     return processor, model, meta
 
 def load_training_state(save_dir):
-    """Load optimizer and scheduler's state for the resume"""
+    """Load optimizer and scheduler state to resume training."""
     save_dir = Path(save_dir)
     
     state_path = Path(save_dir) / "training_state.pt"
     if state_path.exists():
         return torch.load(state_path, map_location="cpu")
 
-    # Manual structure
+    # Older checkpoints store these states separately.
     state = {}
     if (save_dir / "optimizer_state_dict.pt").exists():
         state["optimizer"] = torch.load(save_dir / "optimizer_state_dict.pt", map_location="cpu")

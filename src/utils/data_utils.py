@@ -102,11 +102,10 @@ def get_stats(dataset, name: str):
 
 def calculate_sample_weights(dataset, indices, id2label):
     """
-    Compute sample weights for WeightedRandomSampler
-    Assign higher weight to images with less frequent classes
+    Compute sampling weights that favor images containing less frequent classes.
     """
     class_counts = Counter()
-    # class in each image
+    # Count class occurrences in the selected images.
     images_classes_list = []
 
     for idx in indices:
@@ -118,7 +117,7 @@ def calculate_sample_weights(dataset, indices, id2label):
         
         images_classes_list.append(classes_in_img)
 
-    # calculate weight for each class
+    # Compute inverse-frequency class weights.
     total_objects = sum(class_counts.values())
     class_weights = {}
 
@@ -126,11 +125,11 @@ def calculate_sample_weights(dataset, indices, id2label):
         count = class_counts.get(cls_id, 0)
         class_weights[cls_id] = total_objects / (len(id2label) * (count + 1))
 
-    # calculate weight for each image
+    # Use the largest class weight in each image.
     sample_weights = []
     for classes in images_classes_list:
         if not classes:
-            # basic weight for empty images
+            # Give negative images a fixed weight.
             sample_weights.append(0.1)
         else:
             img_weight = max(class_weights[c] for c in classes)

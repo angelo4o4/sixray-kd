@@ -1,18 +1,4 @@
-"""
-Training utilities for Anna's ResNet18 YOLO-style student detector.
-
-This module contains reusable training helpers:
-- one training epoch
-- validation loss evaluation
-- checkpoint loading/saving
-- history helpers
-- AMP scaler helper
-
-It does not contain the full experiment script.
-The actual script will live in:
-
-    scripts/train_student.py
-"""
+"""Student epoch loops, checkpoint handling, and training history utilities."""
 
 import json
 from contextlib import nullcontext
@@ -52,15 +38,7 @@ def make_grad_scaler(device, use_amp=True):
 
 
 def autocast_context(device, use_amp=True):
-    """
-    Return the correct autocast context.
-
-    On CUDA:
-        uses torch.amp.autocast
-
-    On CPU:
-        returns a no-op context
-    """
+    """Use CUDA autocast when enabled; use a no-op context on CPU."""
 
     enabled = bool(use_amp and device.type == "cuda")
 
@@ -124,19 +102,7 @@ def to_jsonable(value):
 
 
 def _encoded_count(encoded_targets, new_key, old_key):
-    """
-    Read counters from encoded target dictionaries.
-
-    The refactored code uses:
-        num_assigned
-        num_skipped
-
-    The notebook used:
-        assigned_objects
-        skipped_collisions
-
-    This helper accepts both.
-    """
+    """Read assignment counts using the module or original notebook keys."""
 
     if new_key in encoded_targets:
         return int(encoded_targets[new_key])
@@ -148,7 +114,7 @@ def _encoded_count(encoded_targets, new_key, old_key):
 
 
 def step_scheduler_after_amp(scheduler, scale_before, scale_after, steps_per_epoch):
-    """Advance the existing epoch cosine only after a full epoch of real updates."""
+    """Step the cosine schedule after an epoch's worth of successful optimizer updates."""
     if scale_after >= scale_before:
         scheduler.optimizer_updates = getattr(scheduler, "optimizer_updates", 0) + 1
         if scheduler.optimizer_updates % steps_per_epoch == 0:
@@ -421,7 +387,7 @@ def build_checkpoint(
     wandb_run=None,
 ):
     """
-    Build a checkpoint dictionary with all information needed to resume training.
+    Store model, optimizer, scheduler, metrics, and history in a checkpoint.
     """
 
     checkpoint = {
@@ -561,7 +527,7 @@ def initialize_training_state(
         )
 
     else:
-        print("No checkpoint resume. Training starts from epoch 1.")
+        print("Starting from epoch 1 without resuming a checkpoint.")
 
     return {
         "history": history,
@@ -606,7 +572,7 @@ def update_best_checkpoints(
 
         save_checkpoint(checkpoint, best_loss_checkpoint_path)
 
-        print(f"saved best loss checkpoint | val_loss={best_val_loss:.6f}")
+        print(f"Saved best-loss checkpoint | val_loss={best_val_loss:.6f}")
 
     if val_detection_metrics is not None:
         current_val_metric = val_detection_metrics.get(BEST_CHECKPOINT_METRIC)
@@ -614,7 +580,7 @@ def update_best_checkpoints(
         if current_val_metric is None:
             print(
                 f"Metric {BEST_CHECKPOINT_METRIC} was not found, "
-                "so metric-best checkpoint was not updated."
+                "so the best-metric checkpoint was not updated."
             )
 
         else:

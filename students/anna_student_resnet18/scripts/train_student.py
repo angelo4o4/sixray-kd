@@ -109,11 +109,7 @@ def build_optimizer(model):
 
 
 def build_scheduler(optimizer):
-    """
-    Build learning-rate scheduler.
-
-    The notebook used cosine annealing logic.
-    """
+    """Build the cosine learning-rate schedule."""
 
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
         optimizer,

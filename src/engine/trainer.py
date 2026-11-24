@@ -6,9 +6,8 @@ from tqdm.auto import tqdm
 from transformers import get_cosine_schedule_with_warmup
 from pathlib import Path
 
-from src.utils.checkpoint import load_training_state
 from src.engine.evaluator import evaluate_detection
-from src.utils.checkpoint import save_checkpoint
+from src.utils.checkpoint import load_training_state, save_checkpoint
 from src.utils.logger import NullLogger
 
 
@@ -47,9 +46,6 @@ class DetectionTrainer:
         num_training_steps = len(train_loader) * epochs
         num_warmup_steps = int(self.warmup_ratio * num_training_steps)
 
-        #print(f"Starting training for {epochs} epochs")
-        #print(f"Total steps: {num_training_steps} | Warmup steps: {num_warmup_steps}")
-
         history = {"train_loss": [], "val_map": [], "val_map_50": [], "val_map_75": []}
         start_epoch = 0
         best_map = 0.0
@@ -73,13 +69,13 @@ class DetectionTrainer:
                 for group in optimizer.param_groups:
                     group["initial_lr"] = self.lr
             print(f"Resuming from epoch {start_epoch + 1} | best mAP so far: {best_map:.4f}")
-        
+
         completed_steps = start_epoch * len(train_loader)
         scheduler = get_cosine_schedule_with_warmup(
             optimizer,
             num_warmup_steps=num_warmup_steps,
             num_training_steps=num_training_steps,
-            last_epoch = completed_steps - 1
+            last_epoch=completed_steps - 1
         )
 
         if resume_from and "scheduler" in training_state:
@@ -131,7 +127,7 @@ class DetectionTrainer:
             last_dir = f"{self.checkpoint_dir}/{self.run_name}_last"
             save_checkpoint(
                 self.model, self.processor, last_dir,
-                metrics=val_metrics, epoch=epoch+1,
+                metrics=val_metrics, epoch=epoch + 1,
                 optimizer=optimizer, scheduler=scheduler,
             )
 
@@ -145,8 +141,8 @@ class DetectionTrainer:
                     save_dir,
                     metrics=val_metrics,
                     epoch=epoch + 1,
-                    optimizer = optimizer,
-                    scheduler = scheduler
+                    optimizer=optimizer,
+                    scheduler=scheduler
                 )
                 print(
                     f"New best model at epoch {epoch + 1} (mAP: {best_map:.4f}). "
@@ -154,7 +150,7 @@ class DetectionTrainer:
                 )
 
         self.logger.finish()
-        print("Training finished!")
+        print("Training finished.")
         print(f"Best val mAP: {best_map:.4f} at epoch {best_epoch}")
         history["best_map"] = best_map
         history["best_epoch"] = best_epoch
@@ -175,10 +171,10 @@ class DetectionTrainer:
 
             self.scaler.scale(loss).backward()
 
-            self.scaler.unscale_(optimizer) # unscale gradients
-            torch.nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=1.0) # clip gradients
+            self.scaler.unscale_(optimizer)
+            torch.nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=1.0)
 
-            # step optimizer and update scaler
+            # Step the scheduler only when AMP has not skipped the optimizer update.
             scale_before = self.scaler.get_scale()
             self.scaler.step(optimizer)
             self.scaler.update()

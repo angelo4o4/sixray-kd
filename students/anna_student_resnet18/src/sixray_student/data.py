@@ -1,15 +1,4 @@
-"""
-Dataset and DataLoader utilities for Anna's ResNet18 student detector.
-
-This module contains only data-related code:
-- reading the train/val/test split
-- loading SIXray-D images and annotations
-- resizing images to the student input size
-- converting COCO-style bbox annotations to xyxy tensors
-- building PyTorch DataLoaders
-
-It intentionally does not contain model, loss, metric, or visualization code.
-"""
+"""SIXray-D image loading, box resizing, saved splits, and DataLoaders."""
 
 import json
 from collections import defaultdict
@@ -154,15 +143,7 @@ class SixRayStudentDataset(Dataset):
 
 
 def detection_collate_fn(batch):
-    """
-    Collate function for object detection.
-
-    Images can be stacked into one tensor:
-        images: [B, 3, H, W]
-
-    Targets must stay as a list because each image has a different number of boxes:
-        targets: list[dict]
-    """
+    """Stack images as [B, 3, H, W] and keep variable-length targets in a list."""
 
     images = []
     targets = []
@@ -209,15 +190,7 @@ def build_datasets(
     split_path=SPLIT_PATH,
     image_size=IMAGE_SIZE,
 ):
-    """
-    Build train, validation, and test datasets.
-
-    Important:
-    - train and val both use TRAIN_JSON / TRAIN_IMG_DIR
-    - test uses TEST_JSON / TEST_IMG_DIR
-
-    This matches the notebook logic.
-    """
+    """Build train/validation from TRAIN_JSON and test from TEST_JSON."""
 
     train_indices, val_indices, test_indices = load_split(split_path)
 
@@ -253,12 +226,7 @@ def build_dataloaders(
     num_workers=NUM_WORKERS,
     pin_memory=PIN_MEMORY,
 ):
-    """
-    Build PyTorch DataLoaders for train, validation, and test.
-
-    pin_memory is enabled only if CUDA is available.
-    This avoids unnecessary pinned-memory behavior on local CPU runs.
-    """
+    """Build train, validation, and test loaders; use pinned memory only on CUDA."""
 
     use_pin_memory = bool(pin_memory and torch.cuda.is_available())
 

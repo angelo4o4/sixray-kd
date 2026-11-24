@@ -6,6 +6,7 @@ __pycache__/
 .env
 
 # Ignore data and weights
+artifacts/
 checkpoints/
 tests/
 tests/fixtures/train.json
