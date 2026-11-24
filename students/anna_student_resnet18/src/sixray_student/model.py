@@ -3,14 +3,7 @@ This module contains:
 - ImageNet normalization layer
 - ResNet18 feature extractor
 - YOLO-style prediction head
-- parameter counting helpers
-
-It does not contain:
-- dataset loading
-- target encoding
-- losses
-- metrics
-- training loop
+- parameter counting
 """
 
 import torch

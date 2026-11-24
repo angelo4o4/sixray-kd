@@ -147,6 +147,7 @@ class SixRayStudentDataset(Dataset):
             "boxes": boxes,
             "labels": labels,
             "image_id": torch.tensor([int(image_id)], dtype=torch.int64),
+            "orig_size": torch.tensor([old_height, old_width], dtype=torch.int64),
         }
 
         return image_tensor, target

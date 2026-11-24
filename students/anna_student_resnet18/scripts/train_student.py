@@ -1,5 +1,5 @@
 """
-Train Anna's ResNet18 YOLO-style student detector on SIXray-D.
+Train ResNet18 YOLO-style student detector on SIXray-D.
 
 Run from repository root:
 
@@ -18,7 +18,6 @@ import numpy as np
 import torch
 
 
-# Make local src/ importable when running this script directly.
 ROOT = Path(__file__).resolve().parents[1]
 SRC_DIR = ROOT / "src"
 sys.path.insert(0, str(SRC_DIR))

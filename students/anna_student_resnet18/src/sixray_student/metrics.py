@@ -238,6 +238,7 @@ def evaluate_map(
     max_detections=MAP_EVAL_MAX_DETECTIONS,
     max_batches=None,
     use_amp=None,
+    original_coordinates=False,
 ):
     """
     Evaluate detection quality with mAP.
@@ -304,6 +305,14 @@ def evaluate_map(
         )
 
         ground_truth = make_ground_truth_for_map(targets)
+
+        if original_coordinates:
+            # Match notebook 05: COCO areas and boxes in the original image frame.
+            for pred, truth, target in zip(preds, ground_truth, targets):
+                height, width = target["orig_size"].tolist()
+                scale = torch.tensor([width / IMAGE_SIZE, height / IMAGE_SIZE] * 2)
+                pred["boxes"] *= scale
+                truth["boxes"] *= scale
 
         metric.update(preds, ground_truth)
 

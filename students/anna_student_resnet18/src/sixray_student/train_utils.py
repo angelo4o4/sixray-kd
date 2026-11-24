@@ -32,7 +32,7 @@ from sixray_student.config import (
     BBOX_ENCODING,
 )
 
-from sixray_student.losses import yolo_loss
+from sixray_student.losses import yolo_loss, feature_distillation_loss
 from sixray_student.target_encoder import encode_targets_yolo
 
 
@@ -147,6 +147,14 @@ def _encoded_count(encoded_targets, new_key, old_key):
     return 0
 
 
+def step_scheduler_after_amp(scheduler, scale_before, scale_after, steps_per_epoch):
+    """Advance the existing epoch cosine only after a full epoch of real updates."""
+    if scale_after >= scale_before:
+        scheduler.optimizer_updates = getattr(scheduler, "optimizer_updates", 0) + 1
+        if scheduler.optimizer_updates % steps_per_epoch == 0:
+            scheduler.step()
+
+
 def train_one_epoch(
     model,
     data_loader,
@@ -157,6 +165,11 @@ def train_one_epoch(
     use_amp=True,
     grad_clip_norm=GRAD_CLIP_NORM,
     log_every_n_batches=LOG_EVERY_N_BATCHES,
+    teacher=None,
+    adapter=None,
+    kd_weight=1.0,
+    background_weight=0.1,
+    scheduler=None,
 ):
     """
     Train the model for one epoch.
@@ -165,6 +178,9 @@ def train_one_epoch(
     """
 
     model.train()
+    if teacher is not None:
+        teacher.eval()
+        adapter.train()
 
     total_loss = 0.0
     total_obj = 0.0
@@ -172,6 +188,10 @@ def train_one_epoch(
     total_cls = 0.0
     total_assigned = 0
     total_skipped = 0
+    total_kd = 0.0
+    total_detection = 0.0
+    successful_updates = 0
+    amp_skips = 0
 
     for batch_idx, (images, targets) in enumerate(data_loader):
         images = images.to(device, non_blocking=True)
@@ -187,8 +207,19 @@ def train_one_epoch(
         optimizer.zero_grad(set_to_none=True)
 
         with autocast_context(device=device, use_amp=use_amp):
-            predictions = model(images)
+            features = model.backbone(model.normalizer(images))
+            predictions = model.head(features)
             loss, loss_dict = yolo_loss(predictions, encoded)
+            total_detection += loss_dict["total_loss"]
+            if teacher is not None:
+                with torch.no_grad():
+                    teacher_features = teacher.model.backbone.model(images).feature_maps[-1]
+                kd_loss, kd_metrics = feature_distillation_loss(
+                    features, teacher_features, adapter, targets,
+                    background_weight=background_weight,
+                )
+                loss = loss + kd_weight * kd_loss
+                total_kd += kd_metrics["kd_loss"]
 
         scaler.scale(loss).backward()
 
@@ -196,14 +227,20 @@ def train_one_epoch(
 
         if grad_clip_norm is not None and grad_clip_norm > 0:
             torch.nn.utils.clip_grad_norm_(
-                model.parameters(),
+                [p for group in optimizer.param_groups for p in group["params"]],
                 grad_clip_norm,
             )
 
+        scale_before = scaler.get_scale()
         scaler.step(optimizer)
         scaler.update()
+        scale_after = scaler.get_scale()
+        successful_updates += int(scale_after >= scale_before)
+        amp_skips += int(scale_after < scale_before)
+        if scheduler is not None:
+            step_scheduler_after_amp(scheduler, scale_before, scale_after, len(data_loader))
 
-        total_loss += loss_dict["total_loss"]
+        total_loss += float(loss.detach())
         total_obj += loss_dict["objectness_loss"]
         total_box += loss_dict["bbox_loss"]
         total_cls += loss_dict["class_loss"]
@@ -238,6 +275,10 @@ def train_one_epoch(
 
     return {
         "total_loss": total_loss / n_batches,
+        "detection_loss": total_detection / n_batches,
+        "kd_loss": total_kd / n_batches,
+        "successful_updates": successful_updates,
+        "amp_skips": amp_skips,
         "objectness_loss": total_obj / n_batches,
         "bbox_loss": total_box / n_batches,
         "class_loss": total_cls / n_batches,
