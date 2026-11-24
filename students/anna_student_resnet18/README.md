@@ -1,8 +1,6 @@
-# Anna ResNet18 YOLO-style student detector
+# ResNet18 YOLO-style student detector
 
-This folder contains Anna's ResNet18-based student detector for the SIXray-D knowledge distillation project.
-
-The code is kept inside a separate student workspace to avoid interfering with other team members' files.
+This folder contains a ResNet18-based student detector.
 
 ## Model
 
@@ -14,7 +12,7 @@ Main design:
 - input size: 640 x 640 RGB
 - prediction grid: 20 x 20
 - boxes per grid cell: 2
-- classes: gun, knife, wrench, pliers, scissors
+- 5 classes: gun, knife, wrench, pliers, scissors
 - bbox encoding: local cell offsets for box center x/y, global normalized width/height
 - output tensor shape: `[B, 2 * (1 + 4 + 5), 20, 20] = [B, 20, 20, 20]`
 
