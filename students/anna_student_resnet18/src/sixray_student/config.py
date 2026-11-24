@@ -1,34 +1,15 @@
-"""
-Configuration for Anna's ResNet18 YOLO-style student detector.
-
-This file should contain only constants and paths.
-
-It should NOT:
-- create datasets
-- initialize models
-- start W&B
-- create optimizers
-- run training
-- load checkpoints
-
-Those things belong in scripts or utility modules.
-"""
+"""Paths and fixed settings for the ResNet18 student experiment."""
 
 from pathlib import Path
 
 
-# =========================
 # Reproducibility
-# =========================
 
 SEED = 42
 
 
-# =========================
 # Dataset paths
-# =========================
 # These paths match the Colab notebook setup.
-# They are intentionally kept as Path objects.
 
 DATA_ROOT = Path("/content/data")
 
@@ -44,9 +25,7 @@ SPLIT_PATH = Path(
 )
 
 
-# =========================
 # Classes
-# =========================
 
 CLASS_NAMES = [
     "gun",
@@ -62,9 +41,7 @@ ID2LABEL = {i: name for i, name in enumerate(CLASS_NAMES)}
 LABEL2ID = {name: i for i, name in enumerate(CLASS_NAMES)}
 
 
-# =========================
 # Model
-# =========================
 
 MODEL_NAME = "student_resnet18_yolo2_local_offsets"
 
@@ -81,23 +58,19 @@ PRETRAINED_BACKBONE = True
 BBOX_ENCODING = "local_cell_offsets_xy_global_wh"
 
 
-# =========================
 # Dataloader
-# =========================
 
 BATCH_SIZE = 2
 NUM_WORKERS = 2
 PIN_MEMORY = True
 
 
-# =========================
 # Training
-# =========================
 
 LEARNING_RATE = 1e-4
 WEIGHT_DECAY = 1e-4
 
-# Total epoch number to reach.
+# Total number of epochs, including completed epochs.
 # Example: if the last checkpoint is epoch 30 and NUM_EPOCHS = 50,
 # training resumes from epoch 31 and stops after epoch 50.
 NUM_EPOCHS = 50
@@ -110,9 +83,7 @@ RESUME_TRAINING = True
 LOG_EVERY_N_BATCHES = 100
 
 
-# =========================
 # Optimizer / scheduler
-# =========================
 
 OPTIMIZER_NAME = "AdamW"
 
@@ -121,9 +92,7 @@ SCHEDULER_T_MAX = NUM_EPOCHS
 SCHEDULER_ETA_MIN = 1e-6
 
 
-# =========================
 # Loss
-# =========================
 
 BOX_LOSS_WEIGHT = 10.0
 
@@ -132,15 +101,13 @@ BOX_LOSS_WEIGHT = 10.0
 MAX_OBJECTNESS_POS_WEIGHT = 50.0
 
 
-# =========================
 # Checkpoints
-# =========================
 
 CHECKPOINT_DIR = Path(
     "/content/drive/MyDrive/DatasetAPAI/SIXray_Project/student_checkpoints_anna"
 )
 
-# Main checkpoint is selected by detection quality mAP@50.
+# We select the main checkpoint by validation AP50.
 BEST_CHECKPOINT_METRIC = "map_50"
 
 BEST_CHECKPOINT_PATH = (
@@ -158,9 +125,7 @@ EVAL_RESULTS_PATH = CHECKPOINT_DIR / "student_resnet18_eval_metrics.json"
 RESUME_CHECKPOINT_PATH = LAST_CHECKPOINT_PATH
 
 
-# =========================
 # mAP evaluation during training
-# =========================
 
 MAP_EVAL_EVERY_N_EPOCHS = 1
 
@@ -172,8 +137,6 @@ MAP_EVAL_NMS_IOU_THRESHOLD = 0.50
 MAP_EVAL_MAX_DETECTIONS = 100
 
 
-# =========================
 # Final evaluation
-# =========================
 
 LOAD_CHECKPOINT_PATH = BEST_CHECKPOINT_PATH

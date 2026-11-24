@@ -26,12 +26,9 @@ def _to_metric_target(labels: list[dict], device: torch.device) -> list[dict]:
 def _to_metric_preds(
     results: list[dict],
     device: torch.device,
-    #score_threshold: float = 0.0,
 ) -> list[dict]:
     preds = []
     for result in results:
-        #scores = result["scores"]
-        #keep = scores >= score_threshold
         preds.append({
             "boxes": result["boxes"].to(device),
             "scores": result["scores"].to(device),
@@ -46,15 +43,14 @@ def evaluate_detection(
     processor,
     dataloader: DataLoader,
     device: torch.device,
-    score_threshold: float = 0.1,  # 0.0 is too strict
+    score_threshold: float = 0.1,
 ) -> dict:
     """Run validation and return COCO-style mAP from torchmetrics."""
     model.eval()
     metric = MeanAveragePrecision(
         box_format="xyxy",
-        class_metrics=True,  # True for per-class mAP
-        #max_det_thresholds=[1, 10, 300] #100
-        )
+        class_metrics=True,
+    )
     metric.warn_on_many_detections = False
 
     for batch in dataloader:

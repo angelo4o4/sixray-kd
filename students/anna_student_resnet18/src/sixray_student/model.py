@@ -1,10 +1,4 @@
-"""
-This module contains:
-- ImageNet normalization layer
-- ResNet18 feature extractor
-- YOLO-style prediction head
-- parameter counting
-"""
+"""ResNet18 backbone, ImageNet normalization, and YOLO-style detection head."""
 
 import torch
 import torch.nn as nn

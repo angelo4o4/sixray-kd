@@ -1,4 +1,4 @@
-"""Data preparation, prediction and plotting"""
+"""Data preparation, prediction, and plotting."""
 
 import json
 from pathlib import Path
@@ -15,7 +15,7 @@ from sixray_student.metrics import decode_predictions
 
 
 def prepare_validation_files(archive_path, data_dir, indices):
-    """Extract the annotation file and selected images, preserving existing files."""
+    """Extract annotations and selected images, skipping files already on disk."""
     data_dir = Path(data_dir)
     with ZipFile(archive_path) as archive:
         if not (data_dir / "train.json").exists():
@@ -30,7 +30,7 @@ def prepare_validation_files(archive_path, data_dir, indices):
 @torch.inference_mode()
 def predict_image(position, teacher_data, student_data, teachers, student, device,
                   confidence=0.001):
-    """Return ground truth and all three predictions in original-pixel xyxy."""
+    """Return ground truth and three model predictions in original-image xyxy pixels."""
     index = student_data.indices[position]
     info = teacher_data.images[index]
     with Image.open(Path(teacher_data.image_dir) / info["file_name"]) as source:

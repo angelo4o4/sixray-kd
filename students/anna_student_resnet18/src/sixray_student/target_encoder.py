@@ -195,7 +195,7 @@ def encode_targets_yolo(
             tx = grid_x_float - grid_x
             ty = grid_y_float - grid_y
 
-            # Numerical safety.
+            # Keep normalized targets in [0, 1].
             tx = max(0.0, min(float(tx), 1.0))
             ty = max(0.0, min(float(ty), 1.0))
             width_norm = max(0.0, min(float(width_norm), 1.0))

@@ -1,14 +1,4 @@
-"""
-W&B configuration and logging helpers for Anna's ResNet18 student detector.
-
-This file is intentionally separated from config.py.
-
-Important:
-- config.py contains only constants and paths.
-- this file contains W&B-specific logic.
-- importing this file should not immediately start a W&B run.
-- the W&B API key is read from Colab userdata under the name "WANDB_API_KEY".
-"""
+"""Optional W&B logging, initialized explicitly by the training script."""
 
 import os
 
@@ -33,16 +23,12 @@ from sixray_student.config import (
 )
 
 
-# =========================
 # W&B switches
-# =========================
 
 USE_WANDB = True
 
 
-# =========================
 # W&B run identity
-# =========================
 
 WANDB_PROJECT = "sixray-kd"
 WANDB_RUN_NAME = "student-resnet18-yolo2-local-offsets"
@@ -55,17 +41,7 @@ WANDB_RUN_ID_PATH = CHECKPOINT_DIR / "student_resnet18_run_id.txt"
 
 
 def get_wandb_api_key():
-    """
-    Read the W&B API key.
-
-    Priority:
-    1. Colab userdata secret named WANDB_API_KEY.
-    2. Environment variable WANDB_API_KEY.
-    3. None.
-
-    We import google.colab only inside this function because google.colab
-    does not exist in normal local VS Code Python environments.
-    """
+    """Read the W&B key from Colab secrets, then the environment, or return None."""
 
     try:
         from google.colab import userdata
@@ -87,14 +63,7 @@ def get_wandb_api_key():
 
 
 def login_to_wandb():
-    """
-    Login to W&B.
-
-    In Colab, this uses:
-        userdata.get("WANDB_API_KEY")
-
-    If the key is not found, wandb.login() falls back to the normal interactive login.
-    """
+    """Log in with the configured key, or ask for credentials interactively."""
 
     import wandb
 
@@ -220,12 +189,7 @@ def _to_float(value):
 
 
 def _to_list(value):
-    """
-    Convert per-class metric containers to a Python list.
-
-    torchmetrics may return tensors for per-class AP.
-    This makes W&B logging robust.
-    """
+    """Convert per-class metrics from tensors or arrays to a list."""
 
     if hasattr(value, "detach"):
         value = value.detach().cpu().tolist()

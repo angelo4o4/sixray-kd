@@ -4,15 +4,15 @@ from torchvision import transforms as T
 
 
 class TrainTransform:
-    """PIL + COCO bbox augmentations applied before the HF processor."""
+    """Image and COCO box augmentation before the Hugging Face processor."""
 
     def __init__(self, flip_p=0.5, vflip_p=0.5, brightness=0.2, contrast=0.2):
         self.flip_p = flip_p
-        self.vflip_p = vflip_p  # adding vertical flip
+        self.vflip_p = vflip_p
         self.color_jitter = T.ColorJitter(brightness=brightness, contrast=contrast)
 
     def _clip_bbox(self, bbox, width, height):
-        """Force the bbox to stay within borders"""
+        """Clip the box to the image boundaries."""
         x, y, w, h = bbox
         x_min = max(0, x)
         y_min = max(0, y)
@@ -29,7 +29,7 @@ class TrainTransform:
             for ann in target["annotations"]:
                 x, y, w, h = ann["bbox"]
                 ann["bbox"] = [width - x - w, y, w, h]
-    
+
         # vertical flip
         if random.random() < self.vflip_p:
             image = T.functional.vflip(image)
@@ -37,7 +37,7 @@ class TrainTransform:
                 x, y, w, h = ann["bbox"]
                 ann["bbox"] = [x, height - y - h, w, h]
 
-        # clipping bboxes to avoid out of bounds
+        # Clip boxes and drop boxes with no area.
         valid_annotations = []
         for ann in target["annotations"]:
             ann["bbox"] = self._clip_bbox(ann["bbox"], width, height)

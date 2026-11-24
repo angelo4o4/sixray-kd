@@ -46,7 +46,7 @@ def feature_distillation_loss(student_features, teacher_features, adapter, targe
     projected = F.normalize(adapter(student_features).float(), dim=1)
     reference = F.normalize(teacher_features.float(), dim=1)
     distance = (projected - reference).square().sum(dim=1)
-    batch_size, grid_h, grid_w = distance.shape
+    _, grid_h, grid_w = distance.shape
     mask = torch.zeros_like(distance)
     for batch_index, target in enumerate(targets):
         for x1, y1, x2, y2 in target["boxes"].tolist():
@@ -266,17 +266,7 @@ def class_loss(class_logits, target_classes):
 
 
 def _get_class_targets(encoded_targets):
-    """
-    Read class targets from encoded target dictionary.
-
-    The notebook originally used:
-        encoded_targets["classes"]
-
-    The refactored encoder uses:
-        encoded_targets["class_targets"]
-
-    This helper accepts both names.
-    """
+    """Read class targets using either "class_targets" or the notebook's "classes" key."""
 
     if "class_targets" in encoded_targets:
         return encoded_targets["class_targets"]
@@ -346,12 +336,7 @@ def yolo_loss(
 
 
 def check_loss_on_dummy_batch():
-    """
-    Small CPU sanity check for the loss code.
-
-    This does not test model quality.
-    It only checks that shapes are compatible and the loss runs.
-    """
+    """Check loss computation and tensor shapes on a small CPU batch."""
 
     batch_size = 2
     grid_size = 20
