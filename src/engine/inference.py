@@ -1,4 +1,4 @@
-"""Data preparation, prediction, and plotting for notebook 05."""
+"""Data preparation, prediction and plotting"""
 
 import json
 from pathlib import Path
