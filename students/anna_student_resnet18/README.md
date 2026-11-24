@@ -31,7 +31,7 @@ students/anna_student_resnet18/
 ├── scripts/
 │   ├── train_student.py
 │   ├── evaluate_student.py
-│   └── smoke_test_student.py
+│   
 └── src/
     └── sixray_student/
         ├── __init__.py
